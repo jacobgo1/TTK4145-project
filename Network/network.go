@@ -53,10 +53,10 @@ func Network() {
 
 	// The example message. We just send one of these every second.
 	go func() {
-		elevator := elevator.ElevatorInstance
 		for {
+			elevator := elevator.ElevatorInstance
 			elevatorTx <- elevator
-			time.Sleep(20 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 		}
 	}()
 

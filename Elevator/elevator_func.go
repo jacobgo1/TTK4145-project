@@ -3,6 +3,7 @@ package elevator
 import (
 	"TTK4145-Project/Config"
 	"TTK4145-Project/elevio"
+	"fmt"
 )
 
 func InitElevator() {
@@ -26,6 +27,7 @@ func updateElevator(state chan config.ElevatorState, dir chan elevio.MotorDirect
 		select {
 		case f := <-floor:
 			ElevatorInstance.Floor = f
+			fmt.Println("Floor: ", f)
 		case s := <-state:
 			ElevatorInstance.State = s
 		case d := <-dir:

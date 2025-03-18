@@ -2,6 +2,7 @@ package elevator
 
 import (
 	"TTK4145-Project/Config"
+	"TTK4145-Project/Utils"
 	"TTK4145-Project/elevio"
 	"fmt"
 )
@@ -16,21 +17,25 @@ func RunElevator(orders chan [config.NumFloors][config.NumButtons]config.OrderSt
 
 	state := make(chan config.ElevatorState)
 	dir := make(chan elevio.MotorDirection)
+	floorRun := make(chan int)
+	floorUpdate := make(chan int)
 
 	var d elevio.MotorDirection = elevio.MD_Up
-	//elevio.SetMotorDirection(d)
+	elevio.SetMotorDirection(d)
 
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
 
+	go utils.Repeater(drv_floors, floorRun, floorUpdate)
+
+	go updateElevator(state, dir, floorUpdate, orders)
+
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
-
-	go updateElevator(state, dir, drv_floors, orders)
 
 	for {
 		select {
@@ -38,7 +43,7 @@ func RunElevator(orders chan [config.NumFloors][config.NumButtons]config.OrderSt
 			fmt.Printf("%+v\n", a)
 			elevio.SetButtonLamp(a.Button, a.Floor, true)
 
-		case a := <-drv_floors:
+		case a := <-floorRun:
 			fmt.Printf("%+v\n", a)
 			if a == numFloors-1 {
 				d = elevio.MD_Down
@@ -62,6 +67,7 @@ func RunElevator(orders chan [config.NumFloors][config.NumButtons]config.OrderSt
 					elevio.SetButtonLamp(b, f, false)
 				}
 			}
+
 		}
 	}
 }
