@@ -1,10 +1,11 @@
-package main
+package network
 
 import (
-	"Network-go/network/bcast"
-	"Network-go/network/localip"
-	"Network-go/network/peers"
-	"flag"
+	"TTK4145-Project/Config"
+	"TTK4145-Project/Elevator"
+	"TTK4145-Project/Network/network/bcast"
+	"TTK4145-Project/Network/network/localip"
+	"TTK4145-Project/Network/network/peers"
 	"fmt"
 	"os"
 	"time"
@@ -13,17 +14,12 @@ import (
 // We define some custom struct to send over the network.
 // Note that all members we want to transmit must be public. Any private members
 //  will be received as zero-values.
-type HelloMsg struct {
-	Message string
-	Iter    int
-}
 
-func main() {
+func Network() {
 	// Our id can be anything. Here we pass it on the command line, using
 	//  `go run main.go -id=our_id`
 	var id string
-	flag.StringVar(&id, "id", "", "id of this peer")
-	flag.Parse()
+	id = "1"
 
 	// ... or alternatively, we can use the local IP address.
 	// (But since we can run multiple programs on the same PC, we also append the
@@ -47,21 +43,20 @@ func main() {
 	go peers.Receiver(15647, peerUpdateCh)
 
 	// We make channels for sending and receiving our custom data types
-	helloTx := make(chan HelloMsg)
-	helloRx := make(chan HelloMsg)
+	elevatorTx := make(chan config.Elevator)
+	elevatorRx := make(chan config.Elevator)
 	// ... and start the transmitter/receiver pair on some port
 	// These functions can take any number of channels! It is also possible to
 	//  start multiple transmitters/receivers on the same port.
-	go bcast.Transmitter(16569, helloTx)
-	go bcast.Receiver(16569, helloRx)
+	go bcast.Transmitter(16569, elevatorTx)
+	go bcast.Receiver(16569, elevatorRx)
 
 	// The example message. We just send one of these every second.
 	go func() {
-		helloMsg := HelloMsg{"Hello from " + id, 0}
+		elevator := elevator.ElevatorInstance
 		for {
-			helloMsg.Iter++
-			helloTx <- helloMsg
-			time.Sleep(1 * time.Second)
+			elevatorTx <- elevator
+			time.Sleep(20 * time.Millisecond)
 		}
 	}()
 
@@ -74,7 +69,7 @@ func main() {
 			fmt.Printf("  New:      %q\n", p.New)
 			fmt.Printf("  Lost:     %q\n", p.Lost)
 
-		case a := <-helloRx:
+		case a := <-elevatorRx:
 			fmt.Printf("Received: %#v\n", a)
 		}
 	}
